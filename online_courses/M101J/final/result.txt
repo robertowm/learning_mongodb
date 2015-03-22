@@ -1,0 +1,87 @@
+-- Question 1 --
+
+Import enron data using:
+
+mongorestore -d enron -c messages --drop messages.bson 
+
+The answer is the result of the following query:
+
+db.messages.find({ "headers.From": { $eq: "andrew.fastow@enron.com" }, "headers.To": { $eq: "jeff.skilling@enron.com" }}).count()
+
+-- Question 2 --
+
+Execute the following query:
+
+db.messages.aggregate([
+	{ "$project": { "_id": 1, "from": "$headers.From", "to": "$headers.To" } },
+	{ "$unwind" : "$to" },
+	{ "$group": {
+		"_id": {"id": "$_id", "from": "$from"},
+		"to": { "$addToSet": "$to" }
+	} },
+	{ "$unwind" : "$to" },
+	{ "$group": {
+		"_id": { "from": "$_id.from", "to": "$to" },
+		"count": { "$sum": 1 }
+	} },
+	{ "$sort" : { "count": -1 } }
+])
+
+-- Question 3 --
+
+Execute the following query:
+
+db.messages.update(
+   { "headers.Message-ID": "<8147308.1075851042335.JavaMail.evans@thyme>" },
+   {
+      "$addToSet": { "headers.To": "mrpotatohead@10gen.com" }
+   }
+)
+
+-- Question 4 --
+
+At folder __q4__.
+
+-- Question 5 --
+
+Indexes a_1_b_1, c_1 and a_1_b_1_c-1.
+
+-- Question 6 --
+
+Options "Remove all indexes from the collection, leaving only the index on _id in place" and "Set w=0, j=0 on writes".
+
+-- Question 7 --
+
+db.albums.aggregate([
+	{$project: {"images": 1, "_id": 0}},
+	{$unwind: "$images"},
+	{$sort: {"images": 1}},
+	{$out: "nonOrphanImages"}
+]);
+
+db.nonOrphanImages.ensureIndex({images: 1});
+
+var cursor = db.images.find();
+
+cursor.forEach( function(e) {
+	var elem = db.nonOrphanImages.findOne({
+		images: e._id
+	});
+	if (elem == null) {
+		db.images.remove({_id: e._id});
+	}
+});
+
+db.images.find({tags:"sunrises"}).count();
+
+-- Question 8 --
+
+Just 1.
+
+-- Question 9 --
+
+patient_id
+
+-- Question 10 --
+
+"The query did not utilize an index to figure out which documents match the find criteria.", "The query used an index for the sorting phase." and "The query performed a full collection scan".
